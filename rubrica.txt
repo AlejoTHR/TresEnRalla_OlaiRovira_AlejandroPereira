@@ -1,0 +1,36 @@
+M01.2.1 - Activitat per parelles
+
+== Punts a avaluar ==
+- Protocol definit (20%)
+{esquema}
+[explicació]
+-> explicació per vídeo (punt 4)
+
+- Documentació del protocol (25%)
+{capçaleres}
+{suport d'imatges}
+-> explicació per vídeo (punt 3)
+
+- Ús correcte de nc (20%) {codi}
+- Gestió de torns (20%) {codi}
+- Control d’errors mínim (15%) {codi}
+
+
+== Extra (+10%) ==
+- Presentació del joc (colors diferents per a cada jugador, per al tauler, paràmetres extra)
+
+
+== VÍDEO ==
+1. Execució del joc:
+-> S'ha de mostrar una partida d'inici a final (gameplay no comentat)
+
+2. Explicació d'un loop de joc (amb partida de fons)
+-> Què espera el servidor, què envia el client, com es valida, què es gestiona, etc.
+
+3. Explicació del codi (amb codi de fons)
+-> Què espera el servidor, què envia el client, com es valida, què es gestiona, etc.
+
+
+== Requisits ==
+- Si el programa no s'executa o si no hi ha un loop de joc, la nota màxima és un 4
+- Si no s'entrega el vídeo, l'activitat no es pot avaluar
