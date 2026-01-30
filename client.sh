@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SERVER_IP="192.168.1.57"
-PORT=60000
+PORT=64113
 
 echo "HELLO" | nc -q 0 $SERVER_IP $PORT
 response=$(nc -l -p $PORT)

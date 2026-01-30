@@ -2,7 +2,7 @@
 
 # 0.1 Constants i variables de configuració global
 CLIENT_IP="192.168.1.82"
-PORT=60000
+PORT=64113
 BOARD=(1 2 3 4 5 6 7 8 9)
 
 # 0.2 Definició de la funció que printa el tauler
