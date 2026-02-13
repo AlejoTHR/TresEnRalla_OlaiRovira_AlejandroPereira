@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # 0.1 Constants i variables de configuració global
-CLIENT_IP="192.168.1.82"
-PORT=64113
+CLIENT_IP="10.65.0.42"
+PORT=60000
 BOARD=(1 2 3 4 5 6 7 8 9)
 
 # 0.2 Definició de la funció que printa el tauler
@@ -73,15 +73,22 @@ check_win() {
 
 
 # 1 Espera connexió
+echo "Esperant Connexió"
 msg=$(nc -l -p $PORT)
 
 # 2.1 Si la connexió no és un "HELLO", s'envia un "KO" i es tanca el programa
 if [[ "$msg" != "HELLO" ]]; then
   echo "KO" | nc -q 0 $CLIENT_IP $PORT
+  echo "Connexió rebutjada"
   exit 1
 fi
 
 # 2.2 Si la connexió és "HELLO", s'envia un "OK" i es continua el programa
+if [[ "$msg" == "HELLO" ]]; then
+  echo "OK" | nc -q 0 $CLIENT_IP $PORT
+  # echo "OK" | nc -q 0 "10.65.0.42" "60000"
+  echo "Client Connected!"
+fi
 
 # 3 Missatge de benvinguda a la partida
 # 3.1 Es printa el tauler buit
@@ -89,7 +96,6 @@ print_board
 
 # 4 GameLoop
 while true; do
-
   # == TORN SERVIDOR ==
 
   # 4.1 Es demana una posició al jugador servidor
