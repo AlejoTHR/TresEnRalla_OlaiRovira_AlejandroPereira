@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # 0.1 Constants i variables de configuració global
-CLIENT_IP="10.65.0.42"
-PORT=60000
+CLIENT_IP="10.65.0.37"
+PORT=50000
 BOARD=(1 2 3 4 5 6 7 8 9)
 
 # 0.2 Definició de la funció que printa el tauler
@@ -76,8 +76,11 @@ check_win() {
 echo "Esperant Connexió"
 msg=$(nc -l -p $PORT)
 
+echo "Client tried to connect with message: $msg"
+
 # 2.1 Si la connexió no és un "HELLO", s'envia un "KO" i es tanca el programa
 if [[ "$msg" != "HELLO" ]]; then
+  sleep 3
   echo "KO" | nc -q 0 $CLIENT_IP $PORT
   echo "Connexió rebutjada"
   exit 1
@@ -85,8 +88,9 @@ fi
 
 # 2.2 Si la connexió és "HELLO", s'envia un "OK" i es continua el programa
 if [[ "$msg" == "HELLO" ]]; then
-  echo "OK" | nc -q 0 $CLIENT_IP $PORT
-  # echo "OK" | nc -q 0 "10.65.0.42" "60000"
+  read -p "Press enter to send OK to the client."
+  # echo "OK" | nc -q 0 $CLIENT_IP $PORT
+  echo "OK" | nc "10.65.0.37" "50000"
   echo "Client Connected!"
 fi
 
@@ -120,6 +124,7 @@ while true; do
   # == TORN CLIENT ==
 
   # 4.4 S'envia al client que comença el seu torn
+  echo "CLIENT_TURN" | nc -q 0 $CLIENT_IP $PORT
   # 4.5 Es llegeix el moviment del client
   # 4.6 S'actualitza el moviment al tauler
   # 4.7 Es comprova si s'ha guanyat (result="WIN" o result="NONE")
