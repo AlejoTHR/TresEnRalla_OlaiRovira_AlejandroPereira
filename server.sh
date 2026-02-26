@@ -10,6 +10,10 @@ CLIENT_IP=$1
 PORT=50000
 BOARD=(1 2 3 4 5 6 7 8 9)
 
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+WHITE='\033[0;37m'
+
 LOG_FILE=$2
 
 EXIT_OP="/q"
@@ -17,10 +21,10 @@ EXIT_OP="/q"
 
 # 0.2 Definició de la funció que printa el tauler
 print_board() {
-  echo " ${BOARD[0]} | ${BOARD[1]} | ${BOARD[2]} "
-  echo "---+---+---"
-  echo " ${BOARD[3]} | ${BOARD[4]} | ${BOARD[5]} "
-  echo "---+---+---"
+  echo -e " ${BOARD[0]} | ${BOARD[1]} | ${BOARD[2]} "
+  echo -e "---+---+---"
+  echo -e " ${BOARD[3]} | ${BOARD[4]} | ${BOARD[5]} "
+  echo -e "---+---+---"
   echo -e " ${BOARD[6]} | ${BOARD[7]} | ${BOARD[8]} \n"
 }
 
@@ -77,6 +81,18 @@ check_win() {
     return
   fi
 
+  tie_found=1
+  for i in "${BOARD[@]}"; do
+    if [[ $i != "${RED}X${WHITE}" && $i != "${RED}X${WHITE}" ]]; then
+	tie_found=0
+	break
+    fi
+  done
+
+  if [ tie_found -eq 1 ]; then
+    echo "TIE"
+  fi
+
   # Si no s'ha detectat cap "WIN", retorna un "NONE"
   echo "NONE"
 }
@@ -113,7 +129,6 @@ if [[ "$msg" == "HELLO" ]]; then
     break
   fi
 
-
   echo "OK" | nc -q 0 $CLIENT_IP $PORT
 
   ######echo "OK" | nc -q 0 "10.65.0.51" "50000"
@@ -132,7 +147,7 @@ while true; do
   read -p "Posició del servidor (1-9): " pos
   board_index=$((pos - 1))
 
-  while [ $BOARD[$board_index] != "X" || $BOARD[$board_index] != "O" ]; do
+  while [[ "${BOARD[${board_index}]}" == "X" || "${BOARD[${board_index}]}" == "O" ]]; do
   read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
   board_index=$((pos - 1))
 
@@ -141,9 +156,7 @@ while true; do
 
 
   # assigna "O" a la casella BOARD[...]
-    BOARD[$board_index]="O"
-
-
+    BOARD[$board_index]="${BLUE}O${WHITE}"
 
   # 4.2 Es comprova si s'ha guanyat (result="WIN" o result="NONE")
   result=$(check_win)
@@ -153,6 +166,9 @@ while true; do
     echo "SERVER_WON" >> $LOG_FILE
     echo "Has guanyat!"
     break
+  elif [ "$result" = "TIE"]; then
+  echo "TIE"
+  break
   fi
 
   # informar al client de la nova posició de moviment:
@@ -185,7 +201,7 @@ while true; do
   clientMovement=$(echo "$clientMsg" | cut -d ":" -f 2)
 
   # 4.6 S'actualitza el moviment al tauler
-  BOARD[clientMovement]="X"
+  BOARD[clientMovement]="${RED}X${WHITE}"
 
   # 4.7 Es comprova si s'ha guanyat (result="WIN" o result="NONE")
   result=$(check_win)
