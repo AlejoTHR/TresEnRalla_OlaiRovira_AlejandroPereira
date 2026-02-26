@@ -110,18 +110,24 @@ while true; do
   # 4.1 Es demana una posició al jugador servidor
   # pos - guarda linput de lusuari
   read -p "Posició del servidor (1-9): " pos
+
   # board_index - guarda el resultat de $(( ... ))
   board_index=$((pos - 1))
+
   # assigna "O" a la casella BOARD[...]
   BOARD[$board_index]="O"
 
   # 4.2 Es comprova si s'ha guanyat (result="WIN" o result="NONE")
   result=$(check_win)
-  if [[ "$result" == "WIN" ]]; then
+  if [ "$result" = "WIN" ]; then
     # S'envia un "SERVER_WIN" al client
-    echo "SERVER_WIN" | nc -q 0 $CLIENT_IP $PORT
+    echo "SERVER_WIN:${board_index}" | nc -q 0 $CLIENT_IP $PORT
+    echo "Has guanyat!"
     break
   fi
+
+  # informar al client de la nova posició de moviment:
+  echo "SERVER_MOVEMENT:${board_index}" | nc -q 0 $CLIENT_IP $PORT
 
   # 4.3 Es printa el tauler
   print_board
@@ -130,12 +136,41 @@ while true; do
 
   # 4.4 S'envia al client que comença el seu torn
   echo "CLIENT_TURN" | nc -q 0 $CLIENT_IP $PORT
+
   # 4.5 Es llegeix el moviment del client
+  clientMsg=$(nc -l -p $PORT)
+
+  # Detectar tipus de missatge
+  clientHeader=$(echo "$clientMsg" | cut -d ":" -f 1)
+
+  if [ $clientHeader = "CLIENT_MOVEMENT" ]; then
+    echo "L'oponent ha mogut peça."
+  elif [ $clientHeader = "BYE" ]; then
+    echo "L'oponent s'ha desconnectat!"
+  else
+    echo "[ERROR] El client ha enviat un missatge incorrecte"
+    exit 1
+  fi
+
+  clientMovement=$(echo "$clientMsg" | cut -d ":" -f 2) 
+
   # 4.6 S'actualitza el moviment al tauler
+  BOARD[clientMovement]="X"
+
   # 4.7 Es comprova si s'ha guanyat (result="WIN" o result="NONE")
+  result=$(check_win)
+  if [ "$result" = "WIN" ]; then
+    # S'envia un "SERVER_WIN" al client
+    echo "CLIENT_WIN" | nc -q 0 $CLIENT_IP $PORT
+    echo "Has perdut!"
+    break
+  fi
+
   # 4.8 Es printa el tauler
   print_board
 
 done
+
+print_board
 
 exit 0
