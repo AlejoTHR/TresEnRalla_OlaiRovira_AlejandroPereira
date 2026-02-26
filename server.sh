@@ -1,7 +1,12 @@
 #!/bin/bash
 
+if [ $# -ne 1 ]; then
+  echo "Invalid number of parameters. Only an IP is required."
+  exit 1
+fi
+
 # 0.1 Constants i variables de configuració global
-CLIENT_IP="10.65.0.37"
+CLIENT_IP=$1
 PORT=50000
 BOARD=(1 2 3 4 5 6 7 8 9)
 
@@ -89,8 +94,8 @@ fi
 # 2.2 Si la connexió és "HELLO", s'envia un "OK" i es continua el programa
 if [[ "$msg" == "HELLO" ]]; then
   read -p "Press enter to send OK to the client."
-  # echo "OK" | nc -q 0 $CLIENT_IP $PORT
-  echo "OK" | nc "10.65.0.37" "50000"
+  echo "OK" | nc -q 0 $CLIENT_IP $PORT
+  # echo "OK" | nc -q 0 "10.65.0.51" "50000"
   echo "Client Connected!"
 fi
 
