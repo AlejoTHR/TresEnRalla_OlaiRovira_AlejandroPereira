@@ -4,6 +4,11 @@ SERVER_IP=$1
 PORT=50000
 BOARD=(1 2 3 4 5 6 7 8 9)
 
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+WHITE='\033[0;37m'
+
+
 LOG_FILE=$2
 
 EXIT_OP="/q"
@@ -12,10 +17,10 @@ EXIT_OP="/q"
 # CONDICIPN ED VICTORIA Y DERROTA LA MANEJA EL server.sh
 # FUNCION BOARD DE PLAYER
 print_board() {
-  echo " ${BOARD[0]} | ${BOARD[1]} | ${BOARD[2]} "
-  echo "---+---+---"
-  echo " ${BOARD[3]} | ${BOARD[4]} | ${BOARD[5]} "
-  echo "---+---+---"
+  echo -e " ${BOARD[0]} | ${BOARD[1]} | ${BOARD[2]} "
+  echo -e "---+---+---"
+  echo -e " ${BOARD[3]} | ${BOARD[4]} | ${BOARD[5]} "
+  echo -e "---+---+---"
   echo -e " ${BOARD[6]} | ${BOARD[7]} | ${BOARD[8]} \n"
 }
 
@@ -76,7 +81,7 @@ fi
 
   elif [ $MessageHeader = "SERVER_WIN" ]; then
 	echo "Has Perdut"
-	BOARD[Board_IndexS]="O"
+	BOARD[Board_IndexS]="${BLUE}O${WHITE}"
 	break
 
   elif [ $MessageHeader = "BYE" ]; then
@@ -90,7 +95,7 @@ fi
 
 
 #CAMBIA CASILLA ESCOGIDA POR EL SERVER
-  BOARD[Board_IndexS]="O"
+  BOARD[Board_IndexS]="${BLUE}O${WHITE}"
   print_board
 
 #TURNO DEL PLAYER ENVIADO AL SERVIDOR
@@ -99,14 +104,13 @@ fi
   read -p "Posició del Jugador(1-9): " pos
   Board_IndexP=$((pos - 1))
 
-  while [ $BOARD[$board_index] != "X" || $BOARD[$board_index] != "O" ]; do
+  while [[ "${BOARD[${board_index}]}" == "X" || "${BOARD[${board_index}]}" == "O" ]]; do
   read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
   Board_IndexP=$((pos - 1))
 
   done
 
-
-  BOARD[$Board_IndexP]="X"
+  BOARD[$Board_IndexP]="${RED}X${WHITE}"
 
 # ENVIA MOVIMIENTO AL SERVER
   echo "CLIENT_MOVEMENT:$Board_IndexP" | nc -q 0 $SERVER_IP $PORT
