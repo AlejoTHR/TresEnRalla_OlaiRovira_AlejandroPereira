@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ $# -ne 1 ]; then
-  echo "Invalid number of parameters. Only an IP is required."
+if [ $# -lt 2 ]; then
+  echo "[ERROR]Invalid number of parameters. Only an IP is required and a Log File route"
   exit 1
 fi
 
@@ -10,13 +10,18 @@ CLIENT_IP=$1
 PORT=50000
 BOARD=(1 2 3 4 5 6 7 8 9)
 
+LOG_FILE=$2
+
+EXIT_OP="/q"
+
+
 # 0.2 Definició de la funció que printa el tauler
 print_board() {
   echo " ${BOARD[0]} | ${BOARD[1]} | ${BOARD[2]} "
   echo "---+---+---"
   echo " ${BOARD[3]} | ${BOARD[4]} | ${BOARD[5]} "
   echo "---+---+---"
-  echo " ${BOARD[6]} | ${BOARD[7]} | ${BOARD[8]} "
+  echo -e " ${BOARD[6]} | ${BOARD[7]} | ${BOARD[8]} \n"
 }
 
 # 0.3 Funció que envia a stdout si s'ha guanyat la partida (echo "WIN" o echo "NONE")
@@ -77,26 +82,42 @@ check_win() {
 }
 
 
+
+#0.1 MISSATGE DE PRESENTACIÓ
+echo -e "\n\t\t--||:: BENVINGUT A TRES EN RATLLA UBU ::||--\n\n"
+
+while (true); do
+
 # 1 Espera connexió
 echo "Esperant Connexió"
 msg=$(nc -l -p $PORT)
 
-echo "Client tried to connect with message: $msg"
+echo "Client tried to connect with message: $msg" | tee -a $LOG_FILE
 
 # 2.1 Si la connexió no és un "HELLO", s'envia un "KO" i es tanca el programa
 if [[ "$msg" != "HELLO" ]]; then
-  sleep 3
+
   echo "KO" | nc -q 0 $CLIENT_IP $PORT
-  echo "Connexió rebutjada"
+  echo "Connexió rebutjada" | tee -a $LOG_FILE
   exit 1
 fi
 
 # 2.2 Si la connexió és "HELLO", s'envia un "OK" i es continua el programa
 if [[ "$msg" == "HELLO" ]]; then
-  read -p "Press enter to send OK to the client."
+  read -p "Press enter to send OK to the client or pres /q to Abort(continues by default):" ServerResp
+
+# PREGUNTA SI QUIERE ACEPTAR LA PARTIDA
+  if [ "$ServerResp" = $EXIT_OP ]; then
+    echo "BYE" | nc -q 0 $CLIENT_IP $PORT
+    echo "Server Denied Connection" >> $LOG_FILE
+    break
+  fi
+
+
   echo "OK" | nc -q 0 $CLIENT_IP $PORT
-  # echo "OK" | nc -q 0 "10.65.0.51" "50000"
-  echo "Client Connected!"
+
+  ######echo "OK" | nc -q 0 "10.65.0.51" "50000"
+  echo "Client Connected!" | tee -a $LOG_FILE
 fi
 
 # 3 Missatge de benvinguda a la partida
@@ -105,23 +126,31 @@ print_board
 
 # 4 GameLoop
 while true; do
-  # == TORN SERVIDOR ==
 
   # 4.1 Es demana una posició al jugador servidor
   # pos - guarda linput de lusuari
   read -p "Posició del servidor (1-9): " pos
-
-  # board_index - guarda el resultat de $(( ... ))
   board_index=$((pos - 1))
 
+  while [ $BOARD[$board_index] != "X" || $BOARD[$board_index] != "O" ]; do
+  read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
+  board_index=$((pos - 1))
+
+  done
+  # board_index - guarda el resultat de $(( ... ))
+
+
   # assigna "O" a la casella BOARD[...]
-  BOARD[$board_index]="O"
+    BOARD[$board_index]="O"
+
+
 
   # 4.2 Es comprova si s'ha guanyat (result="WIN" o result="NONE")
   result=$(check_win)
   if [ "$result" = "WIN" ]; then
     # S'envia un "SERVER_WIN" al client
     echo "SERVER_WIN:${board_index}" | nc -q 0 $CLIENT_IP $PORT
+    echo "SERVER_WON" >> $LOG_FILE
     echo "Has guanyat!"
     break
   fi
@@ -145,14 +174,15 @@ while true; do
 
   if [ $clientHeader = "CLIENT_MOVEMENT" ]; then
     echo "L'oponent ha mogut peça."
+
   elif [ $clientHeader = "BYE" ]; then
-    echo "L'oponent s'ha desconnectat!"
+    echo "L'oponent s'ha desconnectat!" | tee -a $LOG_FILE
   else
-    echo "[ERROR] El client ha enviat un missatge incorrecte"
+    echo "[ERROR] El client ha enviat un missatge incorrecte" | tee -a $LOG_FILE
     exit 1
   fi
 
-  clientMovement=$(echo "$clientMsg" | cut -d ":" -f 2) 
+  clientMovement=$(echo "$clientMsg" | cut -d ":" -f 2)
 
   # 4.6 S'actualitza el moviment al tauler
   BOARD[clientMovement]="X"
@@ -172,5 +202,32 @@ while true; do
 done
 
 print_board
+
+### REVANCHA
+  REMATCH=$(nc -l -p $PORT)
+
+  if [ $REMATCH != "REMATCH" ]; then
+    echo "Client Refused Rematch" | tee -a $LOG_FILE
+    echo "BYE" | nc -q 0 $CLIENT_IP $PORT
+    break
+  fi
+
+
+  read -p "Client wants Rematch, press enter to accept, /q to Abort(continues by default)" REMATCH_S
+
+
+  if [ "$REMATCH_S" = $EXIT_OP ]; then
+    echo "Server Refused Rematch" | tee -a $LOG_FILE
+    echo "BYE" | nc -q 0 $CLIENT_IP $PORT
+    break
+  fi
+
+  echo "REMATCH" | nc -q 0 $CLIENT_IP $PORT
+
+  BOARD=(1 2 3 4 5 6 7 8 9)
+
+done
+
+echo -e "\n\n\t --||:: COMIATS, ESTIMAT USUARI, TORNI D'HORA ::||--"
 
 exit 0
