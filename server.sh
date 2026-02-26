@@ -89,7 +89,7 @@ check_win() {
     fi
   done
 
-  if [ tie_found -eq 1 ]; then
+  if [[ tie_found == 0 ]]; then
     echo "TIE"
   fi
 
@@ -147,7 +147,7 @@ while true; do
   read -p "Posició del servidor (1-9): " pos
   board_index=$((pos - 1))
 
-  while [[ "${BOARD[${board_index}]}" == "X" || "${BOARD[${board_index}]}" == "O" ]]; do
+  while [[ "${BOARD[${board_index}]}" == "${RED}X${WHITE}" || "${BOARD[${board_index}]}" == "${BLUE}O${WHITE}" ]]; do
   read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
   board_index=$((pos - 1))
 
@@ -166,7 +166,7 @@ while true; do
     echo "SERVER_WON" >> $LOG_FILE
     echo "Has guanyat!"
     break
-  elif [ "$result" = "TIE"]; then
+  elif [ "$result" = "TIE" ]; then
   echo "TIE"
   break
   fi

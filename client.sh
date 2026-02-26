@@ -100,11 +100,10 @@ fi
 
 #TURNO DEL PLAYER ENVIADO AL SERVIDOR
 
-
   read -p "Posició del Jugador(1-9): " pos
   Board_IndexP=$((pos - 1))
 
-  while [[ "${BOARD[${board_index}]}" == "X" || "${BOARD[${board_index}]}" == "O" ]]; do
+  while [[ "${BOARD[${board_index}]}" == "${RED}X${WHITE}" || "${BOARD[${board_index}]}" == "${BLUE}O${WHITE}" ]]; do
   read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
   Board_IndexP=$((pos - 1))
 
