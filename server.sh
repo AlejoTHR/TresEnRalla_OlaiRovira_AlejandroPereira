@@ -1,5 +1,5 @@
 #!/bin/bash
-
+## COMPROVACION DE PARAMETROS PARA EL SCRIPT
 if [ $# -lt 2 ]; then
   echo "[ERROR]Invalid number of parameters. Only an IP is required and a Log File route"
   exit 1
@@ -10,6 +10,7 @@ CLIENT_IP=$1
 PORT=50000
 BOARD=(1 2 3 4 5 6 7 8 9)
 
+## CARACTERES ESPECIALES
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 WHITE='\033[0;37m'
@@ -17,9 +18,10 @@ WHITE='\033[0;37m'
 CLIENT_CHAR="${RED}X${WHITE}"
 SERVER_CHAR="${BLUE}O${WHITE}"
 
-LOG_FILE=$2
-
 EXIT_OP="/q"
+
+## LOG FILE POR PARAMETRO
+LOG_FILE=$2
 
 
 # 0.2 Definició de la funció que printa el tauler
@@ -30,6 +32,7 @@ print_board() {
   echo -e "---+---+---"
   echo -e " ${BOARD[6]} | ${BOARD[7]} | ${BOARD[8]} \n"
 }
+
 
 # 0.3 Funció que envia a stdout si s'ha guanyat la partida (echo "WIN" o echo "NONE")
 check_win() {
@@ -99,7 +102,7 @@ check_win() {
   # Si no s'ha detectat cap "WIN", retorna un "NONE"
   echo "NONE"
 }
-
+## CONDICION DE EMPATE
 check_valid_pos() {
   aux_pos="$1"
 
@@ -132,7 +135,7 @@ echo -e "\n\t\t--||:: BENVINGUT A TRES EN RATLLA UBU ::||--\n\n"
 # 1 Espera connexió
 echo "Esperant Connexió"
 msg=$(nc -l -p $PORT)
-
+# MENSAJE AL LOG FILE
 echo "Client tried to connect with message: $msg" | tee -a $LOG_FILE
 
 # 2.1 Si la connexió no és un "HELLO", s'envia un "KO" i es tanca el programa
@@ -150,13 +153,14 @@ if [[ "$msg" == "HELLO" ]]; then
 # PREGUNTA SI QUIERE ACEPTAR LA PARTIDA
   if [ "$ServerResp" = $EXIT_OP ]; then
     echo "BYE" | nc -q 0 $CLIENT_IP $PORT
+	#ENVIA MENSAJE AL LOG FILE
     echo "Server Denied Connection" >> $LOG_FILE
     break
   fi
-
+  # ENVIA OK AL CIENTE
   echo "OK" | nc -q 0 $CLIENT_IP $PORT
 
-  ######echo "OK" | nc -q 0 "10.65.0.51" "50000"
+  # ENVIA CONECCION AL LOG FILE
   echo "Client Connected!" | tee -a $LOG_FILE
 fi
 
@@ -179,7 +183,7 @@ while true; do
   while [ $(check_valid_pos "$pos") != "VALID" ]; do
     read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
     board_index=$((pos - 1))
-  done
+done
 
   # assigna "O" a la casella BOARD[...]
   BOARD[$board_index]=$SERVER_CHAR
@@ -193,12 +197,13 @@ while true; do
     echo "Has guanyat!"
     break
   elif [ "$result" = "TIE" ]; then
-  echo "TIE"
-  break
+    echo "TIE"
+    break
   fi
 
   # informar al client de la nova posició de moviment:
   echo "SERVER_MOVEMENT:${board_index}" | nc -q 0 $CLIENT_IP $PORT
+  #ENVIA MENSAJE AL LOG FILE
   echo "SERVER_MOVEMENT:${board_index}" >> $LOG_FILE
 
   # 4.3 Es printa el tauler
@@ -211,6 +216,7 @@ while true; do
 
   # 4.5 Es llegeix el moviment del client
   clientMsg=$(nc -l -p $PORT)
+  # MENSAJE AL LOG FILE
   echo "$clientMsg" >> $LOG_FILE
 
   # Detectar tipus de missatge
@@ -225,7 +231,7 @@ while true; do
     echo "[ERROR] El client ha enviat un missatge incorrecte" | tee -a $LOG_FILE
     exit 1
   fi
-
+  ## ENVIA POSICION ELEGIDA CORTADA PARA SOLO ENVIAR EL NUMERO
   clientMovement=$(echo "$clientMsg" | cut -d ":" -f 2)
 
   # 4.6 S'actualitza el moviment al tauler
@@ -240,7 +246,7 @@ while true; do
     break
   fi
 
-  # 4.8 Es printa el tauler
+  # 4.8 Es printa el tauler abans d'acabar la ronda
   print_board
 
 done
@@ -248,28 +254,29 @@ done
 print_board
 
 ### REVANCHA
+## ESPERA REVANCHA DEL CLIENTE
   REMATCH=$(nc -l -p $PORT)
-
+## SI MENSAJE ESCUCHADO NO ES REVANCHA SE CIERRA EL PROGRAMA
   if [ $REMATCH != "REMATCH" ]; then
     echo "Client Refused Rematch" | tee -a $LOG_FILE
     echo "BYE" | nc -q 0 $CLIENT_IP $PORT
     break
   fi
-
+  ## CONFIRMACION DE LA REVANCHA DEL CLIENTE
   read -p "Client wants Rematch, press enter to accept, /q to Abort(continues by default)" REMATCH_S
-
+  ## SI SEVEDOR CANCELA LA REVANCHA SE CIERRA EL PROGRAMA
   if [ "$REMATCH_S" = $EXIT_OP ]; then
     echo "Server Refused Rematch" | tee -a $LOG_FILE
     echo "BYE" | nc -q 0 $CLIENT_IP $PORT
     break
   fi
-
+  # ENVIA REVANCHA AL CLIENTE
   echo "REMATCH" | nc -q 0 $CLIENT_IP $PORT
-
+  # RESETEA EL TABLERO
   BOARD=(1 2 3 4 5 6 7 8 9)
 
 done
-
+# MENSAJE DE DESPEDIDA
 echo -e "\n\n\t --||:: COMIATS, ESTIMAT USUARI, TORNI D'HORA ::||--"
-
+# SE CIERRA EL PROGRAMA
 exit 0
