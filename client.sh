@@ -14,6 +14,11 @@ LOG_FILE=$2
 EXIT_OP="/q"
 
 
+SERVER_CHAR="${BLUE}O${WHITE}"
+CLIENT_CHAR="${RED}X${WHITE}"
+
+
+
 # CONDICIPN ED VICTORIA Y DERROTA LA MANEJA EL server.sh
 # FUNCION BOARD DE PLAYER
 print_board() {
@@ -25,10 +30,13 @@ print_board() {
 }
 
 
+### REVISION DE CASILLA POSIBLE
+
+
+
 #0.1 MISSATGE DE PRESENTACIÓ
 echo -e "\n\t\t--||:: BENVINGUT A TRES EN RATLLA UBU ::||--\n\n"
 
-while (true); do
 
 
 echo "Trobant Conexio"
@@ -51,9 +59,11 @@ if [ "$response" = "OK" ]; then
 echo "Conectat" | tee -a $LOG_FILE
 fi
 
+  while (true); do
 
 # DURANTE EL BUCLEDEL JUEGO
 	while true; do
+
 
 # MUESTRA EL BOARD
   print_board
@@ -81,7 +91,7 @@ fi
 
   elif [ $MessageHeader = "SERVER_WIN" ]; then
 	echo "Has Perdut"
-	BOARD[Board_IndexS]="${BLUE}O${WHITE}"
+	BOARD[Board_IndexS]=$SERVER_CHAR
 	break
 
   elif [ $MessageHeader = "BYE" ]; then
@@ -95,27 +105,29 @@ fi
 
 
 #CAMBIA CASILLA ESCOGIDA POR EL SERVER
-  BOARD[Board_IndexS]="${BLUE}O${WHITE}"
+  BOARD[Board_IndexS]="$SERVER_CHAR"
   print_board
 
 #TURNO DEL PLAYER ENVIADO AL SERVIDOR
-
+## LEE MOVIMIENTO
   read -p "Posició del Jugador(1-9): " pos
   Board_IndexP=$((pos - 1))
 
-  while [[ "${BOARD[${board_index}]}" == "${RED}X${WHITE}" || "${BOARD[${board_index}]}" == "${BLUE}O${WHITE}" ]]; do
+## DETECTA SI LA CASILLA ESTA OCUPADA
+  while [ "${BOARD[${Board_IndexP}]}" = "$CLIENT_CHAR" -o "${BOARD[${Board_IndexP}]}" = "$SERVER_CHAR" ]; do
   read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
+## TRANSFORMAA FORMATO ARRAY
   Board_IndexP=$((pos - 1))
 
   done
-
-  BOARD[$Board_IndexP]="${RED}X${WHITE}"
+## ESCRIBE LA FICHA EN EL BOARD
+  BOARD[$Board_IndexP]="$CLIENT_CHAR"
 
 # ENVIA MOVIMIENTO AL SERVER
   echo "CLIENT_MOVEMENT:$Board_IndexP" | nc -q 0 $SERVER_IP $PORT
 
 done
-
+### PRINTEA BOARD AL FINAL
 
   print_board
 
@@ -128,9 +140,9 @@ done
     echo "BYE" | nc -q 0 $SERVER_IP $PORT
     break
   fi
-
+## ENVIA REMACTH
   echo "REMATCH" | nc -q 0 $SERVER_IP $PORT
-
+## ESCUCHA REMATCH
   REMATCH=$(nc -l -p $PORT)
 
   if [ $REMATCH != "REMATCH" ]; then
@@ -138,11 +150,11 @@ done
     echo "BYE" | nc -q 0 $SERVER_IP $PORT
     break
   fi
-
+## RESETEA REMATCH
   BOARD=(1 2 3 4 5 6 7 8 9)
-
 
 done
 echo -e "\n\n\t --||:: COMIATS, ESTIMAT USUARI, TORNI D'HORA ::||--"
 
 exit 0
+
