@@ -99,6 +99,7 @@ fi
 
 # RECIBE CASILLA YA ESCOGIDA POR EL SERVSER
   ServerMsg=$(nc -l -p $PORT)
+  echo "$ServerMsg" >> $LOG_FILE
 
 # FILTRA EL MENSAJE
 	#CABECERA DEL MENSAJE
@@ -138,7 +139,7 @@ fi
   Board_IndexP=$((pos - 1))
 
 ## DETECTA SI LA CASILLA ESTA OCUPADA
-  while [ $(check_valid_pos "$Board_IndexP") != "VALID" ]; do
+  while [ $(check_valid_pos "$pos") != "VALID" ]; do
   	read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
 ## TRANSFORMAA FORMATO ARRAY
   	Board_IndexP=$((pos - 1))
@@ -148,6 +149,8 @@ fi
 
 # ENVIA MOVIMIENTO AL SERVER
   echo "CLIENT_MOVEMENT:$Board_IndexP" | nc -q 0 $SERVER_IP $PORT
+  echo "CLIENT_MOVEMENT:$Board_IndexP" >> $LOG_FILE
+
 
 done
 ### PRINTEA BOARD AL FINAL
