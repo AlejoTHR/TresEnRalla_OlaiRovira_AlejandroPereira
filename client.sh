@@ -29,6 +29,33 @@ print_board() {
   echo -e " ${BOARD[6]} | ${BOARD[7]} | ${BOARD[8]} \n"
 }
 
+# Checking if the input is a number, is within range, and is not an occupied cell:
+check_valid_pos() {
+  aux_pos="$1"
+
+	# 0.5.1 Comprova que aux_pos conté només dígits
+	if ! echo "$aux_pos" | grep -Eq '^[0-9]+$'; then 
+		echo "NOT_VALID"
+		return
+	fi
+
+	# 0.5.2 Comprova que aux_pos conté un nombre dins del tauler
+	if [ "$aux_pos" -lt 1 -o "$aux_pos" -gt 9 ]; then
+		echo "NOT_VALID"
+		return
+	fi
+
+	# 0.5.3 Comprova que aux_pos conté el nombre d'una casella no ocupada
+	local array_pos=$((aux_pos - 1))
+	local board_char="${BOARD[${array_pos}]}"
+	if [ "$board_char" = "$SERVER_CHAR" -o "$board_char" = "$CLIENT_CHAR" ]; then
+		echo "NOT_VALID"
+		return
+	fi
+
+	echo "VALID"
+}
+
 
 ### REVISION DE CASILLA POSIBLE
 
@@ -63,7 +90,6 @@ fi
 
 # DURANTE EL BUCLEDEL JUEGO
 	while true; do
-
 
 # MUESTRA EL BOARD
   print_board
@@ -102,8 +128,6 @@ fi
 	exit 1
   fi
 
-
-
 #CAMBIA CASILLA ESCOGIDA POR EL SERVER
   BOARD[Board_IndexS]="$SERVER_CHAR"
   print_board
@@ -114,11 +138,10 @@ fi
   Board_IndexP=$((pos - 1))
 
 ## DETECTA SI LA CASILLA ESTA OCUPADA
-  while [ "${BOARD[${Board_IndexP}]}" = "$CLIENT_CHAR" -o "${BOARD[${Board_IndexP}]}" = "$SERVER_CHAR" ]; do
-  read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
+  while [ $(check_valid_pos "$Board_IndexP") != "VALID" ]; do
+  	read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
 ## TRANSFORMAA FORMATO ARRAY
-  Board_IndexP=$((pos - 1))
-
+  	Board_IndexP=$((pos - 1))
   done
 ## ESCRIBE LA FICHA EN EL BOARD
   BOARD[$Board_IndexP]="$CLIENT_CHAR"
