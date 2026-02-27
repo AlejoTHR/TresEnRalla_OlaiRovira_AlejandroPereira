@@ -1,26 +1,30 @@
 #!/bin/bash
 
+## CONSTANTES DEL SCRIPT
+# NETCAT IP POR PARAMETRO
 SERVER_IP=$1
 PORT=50000
 BOARD=(1 2 3 4 5 6 7 8 9)
 
+#COLORES
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 WHITE='\033[0;37m'
 
-
+# LOG FILE POR PARAMETRO
 LOG_FILE=$2
 
+# CARACTERES ESPECIALES
 EXIT_OP="/q"
-
-
 SERVER_CHAR="${BLUE}O${WHITE}"
 CLIENT_CHAR="${RED}X${WHITE}"
 
 
 
-# CONDICIPN ED VICTORIA Y DERROTA LA MANEJA EL server.sh
-# FUNCION BOARD DE PLAYER
+# CONDICION DE VICTORIA Y DERROTA LA MANEJA EL server.sh
+
+## FUNCION BOARD DE PLAYER 
+# -e PARA ADAPATAR FORMATOS DE COLOR
 print_board() {
   echo -e " ${BOARD[0]} | ${BOARD[1]} | ${BOARD[2]} "
   echo -e "---+---+---"
@@ -29,6 +33,8 @@ print_board() {
   echo -e " ${BOARD[6]} | ${BOARD[7]} | ${BOARD[8]} \n"
 }
 
+# YA EN SCRIPT DE EJEMPLO
+# YA EN SCRIPT DE EJEMPLO
 # Checking if the input is a number, is within range, and is not an occupied cell:
 check_valid_pos() {
   aux_pos="$1"
@@ -57,26 +63,21 @@ check_valid_pos() {
 }
 
 
-### REVISION DE CASILLA POSIBLE
-
-
-
 #0.1 MISSATGE DE PRESENTACIÓ
 echo -e "\n\t\t--||:: BENVINGUT A TRES EN RATLLA UBU ::||--\n\n"
-
-
 
 echo "Trobant Conexio"
 
 # ENVIA MENSAJE A SERVER PARA CONFIRMA CONECCION
 echo "HELLO" | nc -q 0 $SERVER_IP $PORT
 
+# MENSAJE ENVIADO AL LOG FILE
 echo "HELLO enviat. Esperant resposta..." | tee -a $LOG_FILE
 
 # ESCUCHA MENSAJE DE REGRESO DEL SERVER
 response=$(nc -l -p $PORT)
 
-# SI RESPUESTA ES OK CONECTA SI NO DA ERROR
+# SI RESPUESTA ES OK CONECTA, SI NO DA ERROR
 if [ "$response" != "OK" ]; then
   echo "Conexio Rebutjada" | tee -a $LOG_FILE
   break
@@ -86,10 +87,11 @@ if [ "$response" = "OK" ]; then
 echo "Conectat" | tee -a $LOG_FILE
 fi
 
-  while (true); do
+#WHILE DE REVANCHA
+while (true); do
 
 # DURANTE EL BUCLEDEL JUEGO
-	while true; do
+  while true; do
 
 # MUESTRA EL BOARD
   print_board
@@ -107,27 +109,27 @@ fi
 	#NUMERO DE CASILLA
   Board_IndexS=$(echo "$ServerMsg" | cut -d ":" -f 2)
 
-	# FILTRO DE CABECERA DE MENSAJE
-  if [ $MessageHeader = "SERVER_MOVEMENT" ]; then
-	echo "L'Oponent ha mogut una peça"
+	# FILTRO DE CABECERA DE MENSAJE POR MOVIMIENTO; VICTORIA; DERROTA, DESCONECCION O MENSAJE ERRONEO
+    if [ $MessageHeader = "SERVER_MOVEMENT" ]; then
+	  echo "L'Oponent ha mogut una peça"
 
-  elif [ $MessageHeader  = "CLIENT_WIN" ]; then
-	echo "Has Guanyat"
-	echo "CLIENT_WON" >> $LOG_FILE
-	break
+    elif [ $MessageHeader  = "CLIENT_WIN" ]; then
+	  echo "Has Guanyat"
+	  echo "CLIENT_WON" >> $LOG_FILE
+	  break
 
-  elif [ $MessageHeader = "SERVER_WIN" ]; then
-	echo "Has Perdut"
-	BOARD[Board_IndexS]=$SERVER_CHAR
-	break
-
-  elif [ $MessageHeader = "BYE" ]; then
-	echo "L'Oponent s'ha desconectat" | tee -a $LOG_FILE
-
-  else
-	echo "[ERROR] El Server ha enviat un missatge incorrecte" | tee -a $LOG_FILE
+    elif [ $MessageHeader = "SERVER_WIN" ]; then
+	  echo "Has Perdut"
+	  BOARD[Board_IndexS]=$SERVER_CHAR
+	  break
+	## SE VA AL LOG FILE
+    elif [ $MessageHeader = "BYE" ]; then
+	  echo "L'Oponent s'ha desconectat" | tee -a $LOG_FILE
+	## SE VA AL LOG FILE
+    else
+	  echo "[ERROR] El Server ha enviat un missatge incorrecte" | tee -a $LOG_FILE
 	exit 1
-  fi
+    fi
 
 #CAMBIA CASILLA ESCOGIDA POR EL SERVER
   BOARD[Board_IndexS]="$SERVER_CHAR"
@@ -139,35 +141,40 @@ fi
   Board_IndexP=$((pos - 1))
 
 ## DETECTA SI LA CASILLA ESTA OCUPADA
-  while [ $(check_valid_pos "$pos") != "VALID" ]; do
-  	read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
+    while [ $(check_valid_pos "$pos") != "VALID" ]; do
+  	  read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
+	  
 ## TRANSFORMAA FORMATO ARRAY
-  	Board_IndexP=$((pos - 1))
-  done
+  	  Board_IndexP=$((pos - 1))
+    done
+
 ## ESCRIBE LA FICHA EN EL BOARD
   BOARD[$Board_IndexP]="$CLIENT_CHAR"
 
 # ENVIA MOVIMIENTO AL SERVER
   echo "CLIENT_MOVEMENT:$Board_IndexP" | nc -q 0 $SERVER_IP $PORT
+  
+# ENVIA MOVIMIENTO AL LOG FILE
   echo "CLIENT_MOVEMENT:$Board_IndexP" >> $LOG_FILE
 
 
 done
 ### PRINTEA BOARD AL FINAL
-
   print_board
 
 ### REMATCH
-
+## ESPERA RESPUESTA DE REVANCHA DEL SERVER
   read -p "Do you want a Rematch?, press enter to accept, /q to Abort(continues by default)" REMATCH_C
-
+## SI RESPUESTA ES NEGATIVA CERRAR CONECCION
   if [ "$REMATCH_C" = $EXIT_OP ]; then
+  ##MENSAJE SE VA AL LOG FILE
     echo "Client Refused Rematch" | tee -a $LOG_FILE
     echo "BYE" | nc -q 0 $SERVER_IP $PORT
     break
   fi
-## ENVIA REMACTH
+## ENVIA MENSAJE DE REMACTH AL SERVER
   echo "REMATCH" | nc -q 0 $SERVER_IP $PORT
+
 ## ESCUCHA REMATCH
   REMATCH=$(nc -l -p $PORT)
 
@@ -176,11 +183,13 @@ done
     echo "BYE" | nc -q 0 $SERVER_IP $PORT
     break
   fi
-## RESETEA REMATCH
+## RESETEA BOARD PARA EL REMATCH
   BOARD=(1 2 3 4 5 6 7 8 9)
 
 done
+## MENSAJE DE DESPEDIDA
 echo -e "\n\n\t --||:: COMIATS, ESTIMAT USUARI, TORNI D'HORA ::||--"
 
+## FIN DE PROGRAMA
 exit 0
 
