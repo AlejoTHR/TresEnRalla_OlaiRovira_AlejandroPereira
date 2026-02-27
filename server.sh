@@ -14,6 +14,9 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 WHITE='\033[0;37m'
 
+CLIENT_CHAR="${RED}X${WHITE}"
+SERVER_CHAR="${BLUE}O${WHITE}"
+
 LOG_FILE=$2
 
 EXIT_OP="/q"
@@ -83,9 +86,9 @@ check_win() {
 
   tie_found=1
   for i in "${BOARD[@]}"; do
-    if [[ $i != "${RED}X${WHITE}" && $i != "${RED}X${WHITE}" ]]; then
-	tie_found=0
-	break
+    if [[ $i != $SERVER_CHAR && $i != $CLIENT_CHAR ]]; then
+	    tie_found=0
+	    break
     fi
   done
 
@@ -97,12 +100,34 @@ check_win() {
   echo "NONE"
 }
 
+check_valid_pos() {
+  aux_pos="$1"
 
+	# 0.5.1 Comprova que aux_pos conté només dígits
+	if ! echo "$aux_pos" | grep -Eq '^[0-9]+$'; then 
+		echo "NOT_VALID"
+		return
+	fi
+
+	# 0.5.2 Comprova que aux_pos conté un nombre dins del tauler
+	if [ "$aux_pos" -lt 1 -o "$aux_pos" -gt 9 ]; then
+		echo "NOT_VALID"
+		return
+	fi
+
+	# 0.5.3 Comprova que aux_pos conté el nombre d'una casella no ocupada
+	local array_pos=$((aux_pos - 1))
+	local board_char="${BOARD[${array_pos}]}"
+	if [ "$board_char" = "$SERVER_CHAR" -o "$board_char" = "$CLIENT_CHAR" ]; then
+		echo "NOT_VALID"
+		return
+	fi
+
+	echo "VALID"
+}
 
 #0.1 MISSATGE DE PRESENTACIÓ
 echo -e "\n\t\t--||:: BENVINGUT A TRES EN RATLLA UBU ::||--\n\n"
-
-while (true); do
 
 # 1 Espera connexió
 echo "Esperant Connexió"
@@ -135,6 +160,8 @@ if [[ "$msg" == "HELLO" ]]; then
   echo "Client Connected!" | tee -a $LOG_FILE
 fi
 
+while (true); do
+
 # 3 Missatge de benvinguda a la partida
 # 3.1 Es printa el tauler buit
 print_board
@@ -145,18 +172,17 @@ while true; do
   # 4.1 Es demana una posició al jugador servidor
   # pos - guarda linput de lusuari
   read -p "Posició del servidor (1-9): " pos
+  # board_index - guarda l'índex de la posició escollida:
   board_index=$((pos - 1))
 
-  while [[ "${BOARD[${board_index}]}" == "${RED}X${WHITE}" || "${BOARD[${board_index}]}" == "${BLUE}O${WHITE}" ]]; do
-  read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
-  board_index=$((pos - 1))
-
+  # Seguir demanant l'input mentre la posició escollida sigui incorrecta:
+  while [ $(check_valid_pos "$pos") != "VALID" ]; do
+    read -p "Posició incorrecta, torna a provar-ho (1-9): " pos
+    board_index=$((pos - 1))
   done
-  # board_index - guarda el resultat de $(( ... ))
-
 
   # assigna "O" a la casella BOARD[...]
-    BOARD[$board_index]="${BLUE}O${WHITE}"
+  BOARD[$board_index]=$SERVER_CHAR
 
   # 4.2 Es comprova si s'ha guanyat (result="WIN" o result="NONE")
   result=$(check_win)
@@ -173,6 +199,7 @@ while true; do
 
   # informar al client de la nova posició de moviment:
   echo "SERVER_MOVEMENT:${board_index}" | nc -q 0 $CLIENT_IP $PORT
+  echo "SERVER_MOVEMENT:${board_index}" >> $LOG_FILE
 
   # 4.3 Es printa el tauler
   print_board
@@ -184,6 +211,7 @@ while true; do
 
   # 4.5 Es llegeix el moviment del client
   clientMsg=$(nc -l -p $PORT)
+  echo "$clientMsg" >> $LOG_FILE
 
   # Detectar tipus de missatge
   clientHeader=$(echo "$clientMsg" | cut -d ":" -f 1)
@@ -201,7 +229,7 @@ while true; do
   clientMovement=$(echo "$clientMsg" | cut -d ":" -f 2)
 
   # 4.6 S'actualitza el moviment al tauler
-  BOARD[clientMovement]="${RED}X${WHITE}"
+  BOARD[clientMovement]=$CLIENT_CHAR
 
   # 4.7 Es comprova si s'ha guanyat (result="WIN" o result="NONE")
   result=$(check_win)
@@ -228,9 +256,7 @@ print_board
     break
   fi
 
-
   read -p "Client wants Rematch, press enter to accept, /q to Abort(continues by default)" REMATCH_S
-
 
   if [ "$REMATCH_S" = $EXIT_OP ]; then
     echo "Server Refused Rematch" | tee -a $LOG_FILE
